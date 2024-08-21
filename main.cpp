@@ -4,7 +4,6 @@
 #include <iostream>
 #include <shlobj.h>
 #include <string>
-#include <vector>
 #include <TlHelp32.h>
 using namespace std;
 
@@ -96,15 +95,6 @@ DWORD GetProcessIdW(LPCWSTR szProcessName){
     return result;
 }
 
-void deletefile(const char* file, bool isDirectory) {
-    if (isDirectory) {
-        RemoveDirectoryA(file);
-    }
-    else {
-        DeleteFileA(file);
-    }
-}
-
 bool rmdir(const char* dir) {
     HANDLE hFind;
     WIN32_FIND_DATAA wfd;
@@ -127,13 +117,13 @@ bool rmdir(const char* dir) {
             rmdir(file.c_str());
         }
         else {
-            deletefile(file.c_str(), false);
+            DeleteFileA(file.c_str());
         }
     } while (FindNextFileA(hFind, &wfd));
 
     FindClose(hFind);
 
-    deletefile(dir, true);
+    RemoveDirectoryA(dir);
     return true;
 }
 
@@ -170,6 +160,11 @@ int wmain(int argc,wchar_t**argv) {
     GetUserNameA(currentUser, &dwSize_currentUser);
 
     if (strcmp(currentUser, "SYSTEM") != 0) {
+        printf("\n\n请手动设置默认浏览器，完成后按任意键继续");
+        system("start ms-settings:defaultapps?registeredAppMachine=Microsoft Edge");
+        system("pause>nul");
+
+
         if (DWORD pid = GetProcessIdW(L"msedgewebview2.exe")) {
             printf("\n\n终止edge webview进程......");
             if (TerminateProcess(OpenProcess(PROCESS_TERMINATE, false, pid), 0)) {
@@ -197,6 +192,8 @@ int wmain(int argc,wchar_t**argv) {
         rmdir("C:\\Program Files (x86)\\Microsoft\\EdgeWebView");
         rmdir("C:\\Program Files (x86)\\Microsoft\\EdgeCore");
         rmdir("C:\\Program Files (x86)\\Microsoft\\EdgeUpdate");
+        rmdir("C:\\ProgramData\\Microsoft\\EdgeUpdate");
+        rmdir("C:\\Windows\\System32\\Microsoft-Edge-WebView");
 
         char szLocal[MAX_PATH] = { 0 };
         if (!SHGetSpecialFolderPathA(0, szLocal, CSIDL_LOCAL_APPDATA, 0)) {
@@ -210,6 +207,8 @@ int wmain(int argc,wchar_t**argv) {
             IsDirectoryExistsA("C:\\Program Files (x86)\\Microsoft\\EdgeWebView") ||
             IsDirectoryExistsA("C:\\Program Files (x86)\\Microsoft\\EdgeCore") ||
             IsDirectoryExistsA("C:\\Program Files (x86)\\Microsoft\\EdgeUpdate") ||
+            IsDirectoryExistsA("C:\\ProgramData\\Microsoft\\EdgeUpdate") ||
+            IsDirectoryExistsA("C:\\Windows\\System32\\Microsoft-Edge-WebView") ||
             IsDirectoryExistsA(szLocal)
             )
         {
@@ -219,7 +218,7 @@ int wmain(int argc,wchar_t**argv) {
             CONSOLE_COLOR_GREEN(printf("成功"));
         }
 
-        printf("\n\n删除桌面快捷方式......");
+        printf("\n\n删除快捷方式......");
         char szDesktop[MAX_PATH];
         char szDesktop2[MAX_PATH];
         if (!SHGetSpecialFolderPathA(0, szDesktop, CSIDL_DESKTOPDIRECTORY, 0)) {
@@ -231,6 +230,8 @@ int wmain(int argc,wchar_t**argv) {
         strcat_s(szDesktop2, "\\Microsoft Edge.lnk");
         DeleteFileA(szDesktop);
         DeleteFileA(szDesktop2);
+        DeleteFileA("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk");
+        DeleteFileA("C:\\Users\\ADMIN\\AppData\\Roaming\\Microsoft\\Internet Explorer\\Quick Launch\\Microsoft Edge.lnk");
         CONSOLE_COLOR_GREEN(printf("成功"));
 
         printf("\n\n删除用户注册表......");
